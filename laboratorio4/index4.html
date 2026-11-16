@@ -1,36 +1,129 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lista de Tareas</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background-color: aquamarine; }
-        h1 { color: blue; }
-        .card { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15); }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panadería - Carrito</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: aquamarine; }
+    h1 { color: blue; }
+    .card { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15); }
+    .emoji { font-size: 4rem; }
+  </style>
 </head>
 <body>
-    <div class="container py-5">
-        <h1 class="text-center fw-bold mb-4">Mi Lista de Tareas</h1>
+  <div class="container py-5">
+    <h1 class="text-center fw-bold mb-4">Panadería - Catálogo</h1>
 
-        <div class="card mx-auto" style="max-width: 500px;">
-            <div class="card-body">
-                <div class="input-group mb-3">
-                    <input type="text" class="form-control" id="tareaInput" placeholder="Escribe una tarea">
-                    <button class="btn btn-primary" id="agregarBtn">Agregar</button>
-                </div>
+    <!-- Catálogo (se genera con JavaScript) -->
+    <div class="row g-4" id="catalogo"></div>
 
-                <ul class="list-group" id="listaTareas"></ul>
-            </div>
-        </div>
-
-        <div class="text-center mt-4">
-            <a href="../index.html" class="btn btn-secondary">← Volver al inicio</a>
-        </div>
+    <!-- Carrito -->
+    <div class="card mt-5">
+      <div class="card-body">
+        <h4 class="card-title">Mi pedido</h4>
+        <p id="vacio" class="text-muted">Tu pedido está vacío. Añade productos del catálogo.</p>
+        <ul class="list-group mb-3" id="listaPedido"></ul>
+        <h5>Total: S/ <span id="total">0.00</span></h5>
+        <button class="btn btn-success me-2" id="comprarBtn">Confirmar compra</button>
+        <button class="btn btn-outline-danger" id="vaciarBtn">Vaciar pedido</button>
+      </div>
     </div>
 
-    <script src="app.js"></script>
+    <div class="text-center mt-4">
+      <a href="../index.html" class="btn btn-secondary">← Volver al inicio</a>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // Productos (cambia nombres, precios o emojis aquí)
+    const productos = [
+      { id: 1, nombre: "Pan de yema", precio: 0.50, emoji: "🥐", agotado: false },
+      { id: 2, nombre: "Pan francés", precio: 0.30, emoji: "🥖", agotado: false },
+      { id: 3, nombre: "Chancay", precio: 0.60, emoji: "🍞", agotado: true },
+      { id: 4, nombre: "Torta de chocolate", precio: 45.00, emoji: "🎂", agotado: false }
+    ];
+
+    let pedido = []; // { id, nombre, precio, cantidad }
+
+    const catalogo = document.getElementById("catalogo");
+    const lista = document.getElementById("listaPedido");
+    const vacio = document.getElementById("vacio");
+    const totalSpan = document.getElementById("total");
+
+    // Dibujar el catálogo
+    productos.forEach(function (p) {
+      const col = document.createElement("div");
+      col.className = "col-6 col-md-3";
+      col.innerHTML =
+        '<div class="card h-100 text-center">' +
+          '<div class="card-body">' +
+            '<div class="emoji">' + p.emoji + '</div>' +
+            '<h6 class="card-title mt-2">' + p.nombre + (p.agotado ? ' <span class="badge bg-danger">Agotado</span>' : '') + '</h6>' +
+            '<p class="mb-2"><span class="badge bg-warning text-dark">S/ ' + p.precio.toFixed(2) + '</span></p>' +
+            '<button class="btn btn-primary w-100" ' + (p.agotado ? 'disabled' : '') + ' onclick="agregar(' + p.id + ')">Añadir</button>' +
+          '</div>' +
+        '</div>';
+      catalogo.appendChild(col);
+    });
+
+    // Añadir al pedido (si ya existe, suma 1)
+    function agregar(id) {
+      const prod = productos.find(function (p) { return p.id === id; });
+      const existente = pedido.find(function (i) { return i.id === id; });
+      if (existente) {
+        existente.cantidad++;
+      } else {
+        pedido.push({ id: prod.id, nombre: prod.nombre, precio: prod.precio, cantidad: 1 });
+      }
+      mostrarPedido();
+    }
+
+    // Eliminar un producto del pedido
+    function eliminar(id) {
+      pedido = pedido.filter(function (i) { return i.id !== id; });
+      mostrarPedido();
+    }
+
+    // Dibujar el pedido y calcular el total
+    function mostrarPedido() {
+      lista.innerHTML = "";
+      let total = 0;
+
+      pedido.forEach(function (i) {
+        const subtotal = i.precio * i.cantidad;
+        total += subtotal;
+        const li = document.createElement("li");
+        li.className = "list-group-item d-flex justify-content-between align-items-center";
+        li.innerHTML =
+          '<span>' + i.nombre + ' x' + i.cantidad + ' - S/ ' + subtotal.toFixed(2) + '</span>' +
+          '<button class="btn btn-sm btn-danger" onclick="eliminar(' + i.id + ')">Eliminar</button>';
+        lista.appendChild(li);
+      });
+
+      vacio.style.display = pedido.length === 0 ? "block" : "none";
+      totalSpan.textContent = total.toFixed(2);
+    }
+
+    // Vaciar todo
+    document.getElementById("vaciarBtn").addEventListener("click", function () {
+      pedido = [];
+      mostrarPedido();
+    });
+
+    // Comprar
+    document.getElementById("comprarBtn").addEventListener("click", function () {
+      if (pedido.length === 0) {
+        alert("Tu pedido está vacío. Añade productos primero.");
+        return;
+      }
+      alert("¡Compra confirmada! Total: S/ " + totalSpan.textContent);
+      pedido = [];
+      mostrarPedido();
+    });
+  </script>
 </body>
 </html>
